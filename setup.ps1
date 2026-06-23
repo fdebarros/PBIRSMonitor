@@ -15,7 +15,7 @@ function Save-Credential([string]$Target, [string]$Label) {
 }
 
 if (-not (Test-Path $ConfigPath)) { Write-Error "config.json not found: $ConfigPath"; exit 1 }
-$config = Get-Content $ConfigPath | ConvertFrom-Json
+$config = Get-Content $ConfigPath -Raw | ConvertFrom-Json
 
 Write-Host "PBIRS Monitor - Credential Setup" -ForegroundColor Yellow
 Write-Host "Credentials are stored in Windows Credential Manager for this account only.`n"
@@ -23,4 +23,4 @@ Write-Host "Credentials are stored in Windows Credential Manager for this accoun
 Save-Credential $config.credentialTarget       "PBIRS Portal ($($config.url))"
 Save-Credential $config.oracleCredentialTarget "Oracle ($($config.oracleTnsAlias))"
 
-Write-Host "`nDone. Run monitor.ps1 start the Monitor." -ForegroundColor Green
+Write-Host "`nDone. Run monitor.ps1 to test." -ForegroundColor Green
