@@ -2,25 +2,22 @@ param(
     [string]$ConfigPath = "$PSScriptRoot\config.json"
 )
 
-function Save-Credential([string]$Target, [string]$Label) {
-    Write-Host "`n=== $Label ===" -ForegroundColor Cyan
-    $user = Read-Host "Username"
-    $pass = Read-Host "Password" -AsSecureString
-    $plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($pass))
-    cmdkey /add:$Target /user:$user /pass:$plain | Out-Null
-    $plain = $null
-    if ($LASTEXITCODE -eq 0) { Write-Host "Saved '$Target'." -ForegroundColor Green }
-    else                      { Write-Host "Failed to save '$Target'." -ForegroundColor Red }
-}
-
 if (-not (Test-Path $ConfigPath)) { Write-Error "config.json not found: $ConfigPath"; exit 1 }
 $config = Get-Content $ConfigPath -Raw | ConvertFrom-Json
 
-Write-Host "PBIRS Monitor - Credential Setup" -ForegroundColor Yellow
-Write-Host "Credentials are stored in Windows Credential Manager for this account only.`n"
+$credFolder = Split-Path $ConfigPath
 
-Save-Credential $config.credentialTarget       "PBIRS Portal ($($config.url))"
-Save-Credential $config.oracleCredentialTarget "Oracle ($($config.oracleTnsAlias))"
+Write-Host "PBIRS Monitor - Credential Setup" -ForegroundColor Yellow
+Write-Host "Credentials are encrypted with your Windows account key (DPAPI).`n"
+
+Write-Host "=== PBIRS Portal ===" -ForegroundColor Cyan
+$httpCred = Get-Credential -Message "PBIRS Portal credentials"
+$httpCred | Export-Clixml -Path (Join-Path $credFolder "cred_http.xml") -Force
+Write-Host "Saved." -ForegroundColor Green
+
+Write-Host "`n=== Oracle ($($config.oracleTnsAlias)) ===" -ForegroundColor Cyan
+$oraCred = Get-Credential -Message "Oracle credentials"
+$oraCred | Export-Clixml -Path (Join-Path $credFolder "cred_oracle.xml") -Force
+Write-Host "Saved." -ForegroundColor Green
 
 Write-Host "`nDone. Run monitor.ps1 to test." -ForegroundColor Green
