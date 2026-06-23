@@ -94,11 +94,11 @@ function Test-Oracle([string]$TnsAlias, [string]$User, [string]$Pass) {
 # --- main ---
 
 if (-not (Test-Path $ConfigPath)) { Write-Error "config.json not found: $ConfigPath"; exit 1 }
-$config = Get-Content $ConfigPath | ConvertFrom-Json
+$config = Get-Content $ConfigPath -Raw | ConvertFrom-Json
 
 try {
-    $httpCreds   = Get-StoredCredential $config.credentialTarget
-    $oraCreds    = Get-StoredCredential $config.oracleCredentialTarget
+    $httpCreds = Get-StoredCredential $config.credentialTarget
+    $oraCreds  = Get-StoredCredential $config.oracleCredentialTarget
 } catch {
     Write-Log $config.logFolder "ERROR" "Credentials: $($_.Exception.Message)"; exit 1
 }
