@@ -1,51 +1,26 @@
-# setup.ps1
-# Roda UMA VEZ sob a conta que vai executar o servico.
-# Salva as credenciais no Windows Credential Manager dessa conta.
-# Nenhuma senha e gravada em disco.
-
 param(
     [string]$ConfigPath = "$PSScriptRoot\config.json"
 )
 
-function Save-Credential {
-    param([string]$Target, [string]$Label)
-
+function Save-Credential([string]$Target, [string]$Label) {
     Write-Host "`n=== $Label ===" -ForegroundColor Cyan
-    $user = Read-Host "Usuario"
-    $pass = Read-Host "Senha" -AsSecureString
-
-    # Converte pra BSTR pra usar na Win32 API via cmdkey
-    $plainPass = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($pass)
-    )
-
-    # cmdkey armazena no Credential Manager da conta atual
-    $result = cmdkey /add:$Target /user:$user /pass:$plainPass
-    $plainPass = $null  # limpa da memoria imediatamente
-
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "Credencial '$Target' salva com sucesso." -ForegroundColor Green
-    } else {
-        Write-Host "Erro ao salvar '$Target'." -ForegroundColor Red
-        Write-Host $result
-    }
+    $user = Read-Host "Username"
+    $pass = Read-Host "Password" -AsSecureString
+    $plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($pass))
+    cmdkey /add:$Target /user:$user /pass:$plain | Out-Null
+    $plain = $null
+    if ($LASTEXITCODE -eq 0) { Write-Host "Saved '$Target'." -ForegroundColor Green }
+    else                      { Write-Host "Failed to save '$Target'." -ForegroundColor Red }
 }
 
-if (-not (Test-Path $ConfigPath)) {
-    Write-Host "config.json nao encontrado em: $ConfigPath" -ForegroundColor Red
-    exit 1
-}
-
+if (-not (Test-Path $ConfigPath)) { Write-Error "config.json not found: $ConfigPath"; exit 1 }
 $config = Get-Content $ConfigPath | ConvertFrom-Json
 
-Write-Host "`nPBIRS Monitor - Setup de Credenciais" -ForegroundColor Yellow
-Write-Host "As credenciais serao armazenadas no Windows Credential Manager"
-Write-Host "desta conta de usuario. Apenas esta conta consegue le-las.`n"
+Write-Host "PBIRS Monitor - Credential Setup" -ForegroundColor Yellow
+Write-Host "Credentials are stored in Windows Credential Manager for this account only.`n"
 
-# Credencial HTTP (PBIRS portal)
-Save-Credential -Target $config.credentialTarget -Label "PBIRS Portal ($($config.url))"
+Save-Credential $config.credentialTarget       "PBIRS Portal ($($config.url))"
+Save-Credential $config.oracleCredentialTarget "Oracle ($($config.oracleTnsAlias))"
 
-# Credencial Oracle
-Save-Credential -Target $config.oracleCredentialTarget -Label "Oracle ($($config.oracleTnsAlias))"
-
-Write-Host "`nSetup concluido. Execute monitor.ps1 para iniciar o monitor." -ForegroundColor Green
+Write-Host "`nDone. Run monitor.ps1 start the Monitor." -ForegroundColor Green
