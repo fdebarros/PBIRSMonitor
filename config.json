@@ -1,0 +1,9 @@
+{
+  "url": "http://SEU-SERVIDOR/Reports",
+  "credentialTarget": "PBIRSMonitor",
+  "checkIntervalSeconds": 60,
+  "logFolder": "D:\\PBIRSMonitor\\logs",
+  "logRetentionDays": 30,
+  "oracleTnsAlias": "SEU_TNS_ALIAS",
+  "oracleCredentialTarget": "PBIRSMonitorOracle"
+}
