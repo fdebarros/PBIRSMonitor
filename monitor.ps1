@@ -7,31 +7,38 @@ using System;
 using System.Runtime.InteropServices;
 
 public class CredMan {
-    [DllImport("advapi32.dll", SetLastError=true, CharSet=CharSet.Unicode)]
-    private static extern bool CredRead(string target, uint type, uint flags, out IntPtr credential);
-    [DllImport("advapi32.dll")]
-    private static extern void CredFree(IntPtr buffer);
-
     [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
     private struct CREDENTIAL {
-        public uint Flags, Type;
-        public string TargetName, Comment;
+        public uint Flags;
+        public uint Type;
+        public string TargetName;
+        public string Comment;
         public System.Runtime.InteropServices.ComTypes.FILETIME LastWritten;
         public uint CredentialBlobSize;
         public IntPtr CredentialBlob;
-        public uint Persist, AttributeCount;
+        public uint Persist;
+        public uint AttributeCount;
         public IntPtr Attributes;
-        public string TargetAlias, UserName;
+        public string TargetAlias;
+        public string UserName;
     }
+
+    [DllImport("advapi32.dll", SetLastError=true, CharSet=CharSet.Unicode)]
+    private static extern bool CredRead(string target, uint type, uint flags, out IntPtr credential);
+
+    [DllImport("advapi32.dll")]
+    private static extern void CredFree(IntPtr buffer);
 
     public static string[] Read(string target) {
         IntPtr ptr;
         if (!CredRead(target, 1, 0, out ptr)) return null;
         try {
-            var cred = Marshal.PtrToStructure<CREDENTIAL>(ptr);
+            CREDENTIAL cred = (CREDENTIAL)Marshal.PtrToStructure(ptr, typeof(CREDENTIAL));
             string password = Marshal.PtrToStringUni(cred.CredentialBlob, (int)(cred.CredentialBlobSize / 2));
             return new string[] { cred.UserName, password };
-        } finally { CredFree(ptr); }
+        } finally {
+            CredFree(ptr);
+        }
     }
 }
 '@ -ErrorAction SilentlyContinue
