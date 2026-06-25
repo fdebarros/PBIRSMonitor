@@ -31,23 +31,22 @@ function Test-Oracle([string]$TnsAlias, [System.Management.Automation.PSCredenti
     $pass = $Cred.GetNetworkCredential().Password
     try {
         $odpPaths = @(
+            "C:\Program Files\Oracle Client for Microsoft Tools\odp.net\managed\common\Oracle.ManagedDataAccess.dll",
             "${env:ProgramFiles}\Oracle\ODAC\odp.net\managed\common\Oracle.ManagedDataAccess.dll",
             "${env:ProgramFiles(x86)}\Oracle\ODAC\odp.net\managed\common\Oracle.ManagedDataAccess.dll"
         )
-        foreach ($p in $odpPaths) { if (Test-Path $p) { Add-Type -Path $p; break } }
+        $loaded = $false
+        foreach ($p in $odpPaths) {
+            if (Test-Path $p) { Add-Type -Path $p -ErrorAction Stop; $loaded = $true; break }
+        }
+        if (-not $loaded) { throw "Oracle.ManagedDataAccess.dll not found." }
 
         $conn = New-Object Oracle.ManagedDataAccess.Client.OracleConnection(
             "User Id=$user;Password=$pass;Data Source=$TnsAlias;Connection Timeout=15;")
         $conn.Open(); $conn.Close(); $conn.Dispose()
         return @{ OK = $true }
     } catch {
-        try {
-            $c = New-Object System.Data.Odbc.OdbcConnection("DSN=$TnsAlias;UID=$user;PWD=$pass;")
-            $c.ConnectionTimeout = 15; $c.Open(); $c.Close(); $c.Dispose()
-            return @{ OK = $true }
-        } catch {
-            return @{ OK = $false; Error = $_.Exception.Message }
-        }
+        return @{ OK = $false; Error = $_.Exception.Message }
     }
 }
 
@@ -57,8 +56,8 @@ if (-not (Test-Path $ConfigPath)) { Write-Error "config.json not found: $ConfigP
 $config     = Get-Content $ConfigPath -Raw | ConvertFrom-Json
 $credFolder = Split-Path $ConfigPath
 
-$httpCredFile   = Join-Path $credFolder "cred_http.xml"
-$oraCredFile    = Join-Path $credFolder "cred_oracle.xml"
+$httpCredFile = Join-Path $credFolder "cred_http.xml"
+$oraCredFile  = Join-Path $credFolder "cred_oracle.xml"
 
 if (-not (Test-Path $httpCredFile) -or -not (Test-Path $oraCredFile)) {
     Write-Error "Credential files not found. Run setup.ps1 first."
