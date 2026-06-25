@@ -26,24 +26,24 @@ $launcherPath = "D:\PBIRSMonitor\PBIRSMonitor-Launcher.cmd"
 switch ($Action) {
 
     "Register" {
-        $action    = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$launcherPath`""
-        $trigger   = New-ScheduledTaskTrigger -AtStartup
-        $settings  = New-ScheduledTaskSettingsSet `
+        $taskAction    = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$launcherPath`""
+        $taskTrigger   = New-ScheduledTaskTrigger -AtStartup
+        $taskSettings  = New-ScheduledTaskSettingsSet `
             -ExecutionTimeLimit (New-TimeSpan -Hours 0) `
             -RestartCount 3 `
             -RestartInterval (New-TimeSpan -Minutes 1) `
             -StartWhenAvailable
-        $principal = New-ScheduledTaskPrincipal `
+        $taskPrincipal = New-ScheduledTaskPrincipal `
             -UserId $env:USERNAME `
             -LogonType Interactive `
             -RunLevel Highest
 
         Register-ScheduledTask `
             -TaskName $taskName `
-            -Action $action `
-            -Trigger $trigger `
-            -Settings $settings `
-            -Principal $principal `
+            -Action $taskAction `
+            -Trigger $taskTrigger `
+            -Settings $taskSettings `
+            -Principal $taskPrincipal `
             -Force | Out-Null
 
         Write-Host "Task '$taskName' registered." -ForegroundColor Green
@@ -70,11 +70,11 @@ switch ($Action) {
             Write-Host "Task '$taskName' not found." -ForegroundColor Red
         } else {
             $info = Get-ScheduledTaskInfo -TaskName $taskName
-            Write-Host "Task      : $taskName"
-            Write-Host "State     : $($task.State)"
-            Write-Host "Last Run  : $($info.LastRunTime)"
+            Write-Host "Task       : $taskName"
+            Write-Host "State      : $($task.State)"
+            Write-Host "Last Run   : $($info.LastRunTime)"
             Write-Host "Last Result: $($info.LastTaskResult)"
-            Write-Host "Next Run  : $($info.NextRunTime)"
+            Write-Host "Next Run   : $($info.NextRunTime)"
         }
     }
 }
